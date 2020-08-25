@@ -52,14 +52,35 @@ class KITTIWriter:
 
         rotation = float(rotation)
 
+        middleTop_x = xcen + np.sin(rotation)*h/2
+        middleTop_y = ycen - np.cos(rotation)*h/2
+
+        middleBottom_x = xcen - np.sin(rotation)*h/2
+        middleBottom_y = ycen + np.cos(rotation)*h/2
+
+        #Transfer to 4 corners
+        x0 = middleTop_x - w*np.cos(rotation)/2
+        y0 = middleTop_y - w*np.sin(rotation)/2
+        
+        x1 = middleTop_x + w*np.cos(rotation)/2
+        y1 = middleTop_y + w*np.sin(rotation)/2    
+           
+        x2 = middleBottom_x + w*np.cos(rotation)/2
+        y2 = middleBottom_y + w*np.sin(rotation)/2        
+        
+        x3 = middleBottom_x - w*np.cos(rotation)/2
+        y3 = middleBottom_y - w*np.sin(rotation)/2
+        
         # PR387
         boxName = box['name']
-        if boxName not in classList:
-            classList.append(boxName)
+        # if boxName not in classList:
+        #     classList.append(boxName)
 
-        classIndex = classList.index(boxName)
+        # classIndex = classList.index(boxName)
+        
+        return x0, y0, x1, y1, x2, y2, x3, y3, boxName
 
-        return classIndex, xcen, ycen, w, h, rotation
+        # return classIndex, xcen, ycen, w, h, rotation
 
     def save(self, classList=[], targetFile=None):
 
@@ -69,27 +90,24 @@ class KITTIWriter:
         if targetFile is None:
             out_file = open(
             self.filename + TXT_EXT, 'w', encoding=ENCODE_METHOD)
-            classesFile = os.path.join(os.path.dirname(os.path.abspath(self.filename)), "classes.txt")
-            out_class_file = open(classesFile, 'w')
 
         else:
             out_file = codecs.open(targetFile, 'w', encoding=ENCODE_METHOD)
-            classesFile = os.path.join(os.path.dirname(os.path.abspath(targetFile)), "classes.txt")
-            out_class_file = open(classesFile, 'w')
-
 
         for box in self.boxlist:
-            classIndex, xcen, ycen, w, h, rotation = self.BndBox2KittiLine(box, classList)
+            # classIndex, xcen, ycen, w, h, rotation = self.BndBox2KittiLine(box, classList)
+            x0, y0, x1, y1, x2, y2, x3, y3, text = self.BndBox2KittiLine(box, classList)
             # print (classIndex, xcen, ycen, w, h)
-            out_file.write("%d %.6f %.6f %.6f %.6f %.6f\n" % (classIndex, xcen, ycen, w, h, rotation))
+            # print(x0, y0, x1, y1, x2, y2, x3, y3, text)
+            out_file.write("%d %d %d %d %d %d %d %d %s\n" % (x0, y0, x1, y1, x2, y2, x3, y3, text))
 
         # print (classList)
         # print (out_class_file)
-        for c in classList:
-            out_class_file.write(c+'\n')
+        # for c in classList:
+        #     out_class_file.write(c+'\n')
 
-        out_class_file.close()
-        out_file.close()
+        # out_class_file.close()
+        # out_file.close()
 
 
 
@@ -101,16 +119,16 @@ class KittiReader:
         self.shapes = []
         self.filepath = filepath
 
-        if classListPath is None:
-            dir_path = os.path.dirname(os.path.realpath(self.filepath))
-            self.classListPath = os.path.join(dir_path, "classes.txt")
-        else:
-            self.classListPath = classListPath
+        # if classListPath is None:
+        #     dir_path = os.path.dirname(os.path.realpath(self.filepath))
+        #     self.classListPath = os.path.join(dir_path, "classes.txt")
+        # else:
+        # self.classListPath = classListPath
 
         # print (filepath, self.classListPath)
 
-        classesFile = open(self.classListPath, 'r')
-        self.classes = classesFile.read().strip('\n').split('\n')
+        # classesFile = open(self.classListPath, 'r')
+        # self.classes = classesFile.read().strip('\n').split('\n')
 
         # print (self.classes)
 
@@ -133,23 +151,35 @@ class KittiReader:
         points = [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]
         self.shapes.append((label, points, rotation, None, None, difficult))
 
-    def kittiLine2Shape(self, classIndex, xcen, ycen, w, h, rotation):
-        label = self.classes[int(classIndex)]
+    def kittiLine2Shape(self, x0, y0, x1, y1, x2, y2, x3, y3, text):
+        label = text
 
-        xmin = max(float(xcen) - float(w) / 2, 0)
-        xmax = min(float(xcen) + float(w) / 2, self.imgSize[1])
-        ymin = max(float(ycen) - float(h) / 2, 0)
-        ymax = min(float(ycen) + float(h) / 2, self.imgSize[0])
+        # xmin = max(float(xcen) - float(w) / 2, 0)
+        # xmax = min(float(xcen) + float(w) / 2, self.imgSize[1])
+        # ymin = max(float(ycen) - float(h) / 2, 0)
+        # ymax = min(float(ycen) + float(h) / 2, self.imgSize[0])
 
-        rotation = float(rotation)
+        # rotation = float(rotation)
+        
+        xmin = float(x0)
+        ymin = float(y0)
+        xmax = float(x2)
+        ymax = float(y2)
+        
+        rotation = np.arctan2(float(y1)-float(y0), float(x1)-float(x0))
 
         return label, xmin, ymin, xmax, ymax, rotation
 
-    def parseYoloFormat(self):
+    def parseYoloFormat(self): 
         bndBoxFile = open(self.filepath, 'r')
         for bndBox in bndBoxFile:
-            classIndex, xcen, ycen, w, h, rotation = bndBox.split(' ')
-            label, xmin, ymin, xmax, ymax, rotation = self.kittiLine2Shape(classIndex, xcen, ycen, w, h, rotation)
+            # classIndex, xcen, ycen, w, h, rotation = bndBox.split(' ')
+            text_split = bndBox.split(',')
+            
+            x0, y0, x1, y1, x2, y2, x3, y3 = text_split[:8]
+            text = ','.join(text_split[8:])
+
+            label, xmin, ymin, xmax, ymax, rotation = self.kittiLine2Shape(x0, y0, x1, y1, x2, y2, x3, y3, text)
 
             # Caveat: difficult flag is discarded when saved as yolo format.
             self.addShape(label, xmin, ymin, xmax, ymax, rotation, False)
