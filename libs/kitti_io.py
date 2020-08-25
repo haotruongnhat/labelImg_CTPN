@@ -99,7 +99,7 @@ class KITTIWriter:
             x0, y0, x1, y1, x2, y2, x3, y3, text = self.BndBox2KittiLine(box, classList)
             # print (classIndex, xcen, ycen, w, h)
             # print(x0, y0, x1, y1, x2, y2, x3, y3, text)
-            out_file.write("%d,%d,%d,%d,%d,%d,%d,%d,%s\n" % (x0, y0, x1, y1, x2, y2, x3, y3, text))
+            out_file.write("%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%s\n" % (x0, y0, x1, y1, x2, y2, x3, y3, text))
 
         # print (classList)
         # print (out_class_file)
@@ -161,12 +161,18 @@ class KittiReader:
 
         # rotation = float(rotation)
         
-        xmin = float(x0)
-        ymin = float(y0)
-        xmax = float(x2)
-        ymax = float(y2)
-        
+        xcen = (float(x1) + float(x0) + float(x2) + float(x3)) / 4
+        ycen = (float(y3) + float(y0) + float(y2) + float(y1)) / 4
+   
         rotation = np.arctan2(float(y1)-float(y0), float(x1)-float(x0))
+
+        w = sqrt((float(x1) - float(x0))**2 + (float(y1) - float(y0))**2)
+        h = sqrt((float(x3) - float(x0))**2 + (float(y3) - float(y0))**2)
+        
+        xmin = max(float(xcen) - float(w) / 2, 0)
+        xmax = min(float(xcen) + float(w) / 2, self.imgSize[1])
+        ymin = max(float(ycen) - float(h) / 2, 0)
+        ymax = min(float(ycen) + float(h) / 2, self.imgSize[0])
 
         return label, xmin, ymin, xmax, ymax, rotation
 
@@ -174,7 +180,7 @@ class KittiReader:
         bndBoxFile = open(self.filepath, 'r')
         for bndBox in bndBoxFile:
             # classIndex, xcen, ycen, w, h, rotation = bndBox.split(' ')
-            text_split = bndBox.split(',')[:-2]
+            text_split = bndBox[:-2].split(',')
             x0, y0, x1, y1, x2, y2, x3, y3 = text_split[:8]
             text = ','.join(text_split[8:])
 
