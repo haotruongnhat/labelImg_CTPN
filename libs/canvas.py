@@ -13,6 +13,9 @@ from libs.shape import Shape
 from libs.utils import distance
 from math import acos, cos, sin, pi, sqrt
 from time import *
+import numpy as np
+
+max_angle = 30
 
 CURSOR_DEFAULT = Qt.ArrowCursor
 CURSOR_POINT = Qt.PointingHandCursor
@@ -520,6 +523,13 @@ class Canvas(QWidget):
                     * (a if (posx >= vertex_point.x()) else 2. * pi - a)
             angle = transform_angle(angle, pos.x())
 
+            angle_in_deg = np.rad2deg(angle)
+            if angle_in_deg > max_angle and angle_in_deg <= 180:
+                angle = np.deg2rad(max_angle)
+        
+            if angle_in_deg > 180 and angle_in_deg < (360 - max_angle):
+                angle = np.deg2rad(360 - max_angle)
+            
             shape.rotation = angle
             
             # XXX: this checking mechanism does not work entirely (the
