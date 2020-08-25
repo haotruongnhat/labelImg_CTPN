@@ -99,7 +99,7 @@ class KITTIWriter:
             x0, y0, x1, y1, x2, y2, x3, y3, text = self.BndBox2KittiLine(box, classList)
             # print (classIndex, xcen, ycen, w, h)
             # print(x0, y0, x1, y1, x2, y2, x3, y3, text)
-            out_file.write("%d %d %d %d %d %d %d %d %s\n" % (x0, y0, x1, y1, x2, y2, x3, y3, text))
+            out_file.write("%d,%d,%d,%d,%d,%d,%d,%d,%s\n" % (x0, y0, x1, y1, x2, y2, x3, y3, text))
 
         # print (classList)
         # print (out_class_file)
@@ -174,8 +174,7 @@ class KittiReader:
         bndBoxFile = open(self.filepath, 'r')
         for bndBox in bndBoxFile:
             # classIndex, xcen, ycen, w, h, rotation = bndBox.split(' ')
-            text_split = bndBox.split(',')
-            
+            text_split = bndBox.split(',')[:-2]
             x0, y0, x1, y1, x2, y2, x3, y3 = text_split[:8]
             text = ','.join(text_split[8:])
 
